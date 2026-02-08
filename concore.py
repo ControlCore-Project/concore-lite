@@ -2,6 +2,7 @@ import time
 import os
 from ast import literal_eval
 import sys
+import numpy as np # Added for numpy type conversion
 
 #if windows, create script to kill this process 
 # because batch files don't provide easy way to know pid of last command
@@ -10,6 +11,24 @@ import sys
 if hasattr(sys, 'getwindowsversion'):
     with open("concorekill.bat","w") as fpid:
         fpid.write("taskkill /F /PID "+str(os.getpid())+"\n")
+
+# NumPy Type Conversion Helper
+def convert_numpy_to_python(obj):
+    #Recursively convert numpy types to native Python types.
+    #This is necessary because literal_eval cannot parse numpy representations
+    #like np.float64(1.0), but can parse native Python types like 1.0.
+    if isinstance(obj, np.generic):
+        # Convert numpy scalar types to Python native types
+        return obj.item()
+    elif isinstance(obj, list):
+        return [convert_numpy_to_python(item) for item in obj]
+    elif isinstance(obj, tuple):
+        return tuple(convert_numpy_to_python(item) for item in obj)
+    elif isinstance(obj, dict):
+        return {key: convert_numpy_to_python(value) for key, value in obj.items()}
+    else:
+        return obj
+
 
 try:
     iport = literal_eval(open("concore.iport").read())
@@ -74,8 +93,10 @@ def write(port, name, val, delta=0):
     try:
         with open(outpath+str(port)+"/"+name,"w") as outfile:     
             if isinstance(val,list):
-                outfile.write(str([simtime+delta]+val))
-                simtime += delta
+                val_converted = convert_numpy_to_python(val)
+                data_to_write = [simtime + delta] + val_converted
+                outfile.write(str(data_to_write))
+                simtime += delta 
             else:
                 outfile.write(val)
     except:
