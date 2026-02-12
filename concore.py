@@ -32,11 +32,11 @@ def convert_numpy_to_python(obj):
 
 try:
     iport = literal_eval(open("concore.iport").read())
-except:
+except (FileNotFoundError, IOError):
     iport = dict()
 try:
     oport = literal_eval(open("concore.oport").read())
-except:
+except (FileNotFoundError, IOError):
     oport = dict()
 
 
@@ -53,7 +53,7 @@ def default_maxtime(default):
     global maxtime
     try:
         maxtime = literal_eval(open(inpath+"1/concore.maxtime").read())
-    except:
+    except (FileNotFoundError, IOError):
         maxtime = default 
 default_maxtime(100)
 
@@ -70,9 +70,9 @@ def read(port, name, initstr):
     global s,simtime,retrycount
     time.sleep(delay)
     try:
-        infile = open(inpath+str(port)+"/"+name);
+        infile = open(inpath+str(port)+"/"+name)
         ins = infile.read()
-    except:
+    except (FileNotFoundError, IOError):
         ins = initstr
     while len(ins)==0:
         time.sleep(delay)
@@ -99,7 +99,7 @@ def write(port, name, val, delta=0):
                 simtime += delta 
             else:
                 outfile.write(val)
-    except:
+    except IOError:
         print("skipping"+outpath+str(port)+"/"+name);
 
 def initval(simtime_val):

@@ -33,13 +33,16 @@ if os.path.exists(CONCOREPATH+"/concore.octave"):
     M_IS_OCTAVE = True       #treat .m as octave 9/27/21
 
 if os.path.exists(CONCOREPATH+"/concore.mcr"): # 11/12/21
-    MCRPATH = open(CONCOREPATH+"/concore.mcr", "r").readline().strip() #path to local Ubunta Matlab Compiler Runtime
+    with open(CONCOREPATH+"/concore.mcr", "r") as f:
+        MCRPATH = f.readline().strip() #path to local Ubunta Matlab Compiler Runtime
     
 if os.path.exists(CONCOREPATH+"/concore.sudo"): # 12/04/21
-    DOCKEREXE = open(CONCOREPATH+"/concore.sudo", "r").readline().strip() #to omit sudo in docker
+    with open(CONCOREPATH+"/concore.sudo", "r") as f:
+        DOCKEREXE = f.readline().strip() #to omit sudo in docker
 
 if os.path.exists(CONCOREPATH+"/concore.repo"): # 12/04/21
-    DOCKEREPO = open(CONCOREPATH+"/concore.repo", "r").readline().strip() #docker id for repo
+    with open(CONCOREPATH+"/concore.repo", "r") as f:
+        DOCKEREPO = f.readline().strip() #docker id for repo
 
 
 prefixedgenode = ""
@@ -111,8 +114,8 @@ if TRIMMED_LOGS:
 else:
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
-f = open(GRAPHML_FILE, "r")
-text_str = f.read()
+with open(GRAPHML_FILE, "r") as f:
+    text_str = f.read()
 
 soup = BeautifulSoup(text_str, 'xml')
 
@@ -131,10 +134,8 @@ for node in nodes_text:
             data = node.find_all('data')[i]
             node_label = prefixedgenode + data.find('y:NodeLabel').text #3/23/21
             nodes_dict[node['id']] = re.sub(r'(\s+|\n)', ' ', node_label)
-        except IndexError:
-            logging.debug('IndexError: A node with no valid properties encountered and ignored')
-        except AttributeError:
-            logging.debug('AttributeError: A node with no valid properties encountered and ignored')
+        except (IndexError, AttributeError):
+            logging.debug('A node with no valid properties encountered and ignored')
 
 for edge in edges_text:
     length = len(edge.find_all('data'))
@@ -206,143 +207,137 @@ for node in nodes_dict:
     if len(sourcecode)!=0 and sourcecode.find(".")!=-1: #3/28/21
         dockername,langext = sourcecode.split(".")
         try:
-            fsource = open(sourcedir+"/"+sourcecode)
-        except:
+            with open(sourcedir+"/"+sourcecode) as fsource:
+                with open(outdir+"/src/"+sourcecode,"w") as fcopy:
+                    fcopy.write(fsource.read())
+        except FileNotFoundError:
             print(sourcecode+" does not exist in "+sourcedir)
             quit()
-        with open(outdir+"/src/"+sourcecode,"w") as fcopy:
-            fcopy.write(fsource.read())
-        fsource.close()
         if concoretype == "docker": # 3/30/21
             try:
-                fsource = open(sourcedir+"/Dockerfile."+dockername)
-                with open(outdir+"/src/Dockerfile."+dockername,"w") as fcopy:
-                    fcopy.write(fsource.read())
+                with open(sourcedir+"/Dockerfile."+dockername) as fsource:
+                    with open(outdir+"/src/Dockerfile."+dockername,"w") as fcopy:
+                        fcopy.write(fsource.read())
                 print(" Using custom Dockerfile for "+dockername)
-            except:
+            except FileNotFoundError:
                 print(" Using default Dockerfile for "+dockername)
-            fsource.close()
         if os.path.isdir(sourcedir+"/"+dockername+".dir"):
             shutil.copytree(sourcedir+"/"+dockername+".dir",outdir+"/src/"+dockername+".dir")
     
 #copy proper concore.py into /src
 try:
     if concoretype=="docker":
-        fsource = open(CONCOREPATH+"/concoredocker.py")
+        with open(CONCOREPATH+"/concoredocker.py") as fsource:
+            with open(outdir+"/src/concore.py","w") as fcopy:
+                fcopy.write(fsource.read())
     else:
-        fsource = open(CONCOREPATH+"/concore.py")
-except:
+        with open(CONCOREPATH+"/concore.py") as fsource:
+            with open(outdir+"/src/concore.py","w") as fcopy:
+                fcopy.write(fsource.read())
+except FileNotFoundError:
     print(CONCOREPATH+" is not correct path to concore")
     quit()
-with open(outdir+"/src/concore.py","w") as fcopy:
-    fcopy.write(fsource.read())
-fsource.close()
 
 #copy proper concore.hpp into /src 6/22/21
 try:
     if concoretype=="docker":
-        fsource = open(CONCOREPATH+"/concoredocker.hpp")
+        with open(CONCOREPATH+"/concoredocker.hpp") as fsource:
+            with open(outdir+"/src/concore.hpp","w") as fcopy:
+                fcopy.write(fsource.read())
     else:
-        fsource = open(CONCOREPATH+"/concore.hpp")
-except:
+        with open(CONCOREPATH+"/concore.hpp") as fsource:
+            with open(outdir+"/src/concore.hpp","w") as fcopy:
+                fcopy.write(fsource.read())
+except FileNotFoundError:
     print(CONCOREPATH+" is not correct path to concore")
     quit()
-with open(outdir+"/src/concore.hpp","w") as fcopy:
-    fcopy.write(fsource.read())
-fsource.close()
 
 #copy proper concore.v into /src 6/25/21
 try:
     if concoretype=="docker":
-        fsource = open(CONCOREPATH+"/concoredocker.v")
+        with open(CONCOREPATH+"/concoredocker.v") as fsource:
+            with open(outdir+"/src/concore.v","w") as fcopy:
+                fcopy.write(fsource.read())
     else:
-        fsource = open(CONCOREPATH+"/concore.v")
-except:
+        with open(CONCOREPATH+"/concore.v") as fsource:
+            with open(outdir+"/src/concore.v","w") as fcopy:
+                fcopy.write(fsource.read())
+except FileNotFoundError:
     print(CONCOREPATH+" is not correct path to concore")
     quit()
-with open(outdir+"/src/concore.v","w") as fcopy:
-    fcopy.write(fsource.read())
-fsource.close()
 
 #copy mkcompile into /src  5/27/21
 try:
-    fsource = open(CONCOREPATH+"/mkcompile")
-except:
+    with open(CONCOREPATH+"/mkcompile") as fsource:
+        with open(outdir+"/src/mkcompile","w") as fcopy:
+            fcopy.write(fsource.read())
+except FileNotFoundError:
     print(CONCOREPATH+" is not correct path to concore")
     quit()
-with open(outdir+"/src/mkcompile","w") as fcopy:
-    fcopy.write(fsource.read())
-fsource.close()
 os.chmod(outdir+"/src/mkcompile",stat.S_IRWXU)
 
 #copy concore*.m into /src  4/2/21
 try: #maxtime in matlab 11/22/21
-    fsource = open(CONCOREPATH+"/concore_default_maxtime.m")
-except:
+    with open(CONCOREPATH+"/concore_default_maxtime.m") as fsource:
+        with open(outdir+"/src/concore_default_maxtime.m","w") as fcopy:
+            fcopy.write(fsource.read())
+except FileNotFoundError:
     print(CONCOREPATH+" is not correct path to concore")
     quit()
-with open(outdir+"/src/concore_default_maxtime.m","w") as fcopy:
-    fcopy.write(fsource.read())
-fsource.close()
 try:
-    fsource = open(CONCOREPATH+"/concore_unchanged.m")
-except:
+    with open(CONCOREPATH+"/concore_unchanged.m") as fsource:
+        with open(outdir+"/src/concore_unchanged.m","w") as fcopy:
+            fcopy.write(fsource.read())
+except FileNotFoundError:
     print(CONCOREPATH+" is not correct path to concore")
     quit()
-with open(outdir+"/src/concore_unchanged.m","w") as fcopy:
-    fcopy.write(fsource.read())
-fsource.close()
 try:
-    fsource = open(CONCOREPATH+"/concore_read.m")
-except:
+    with open(CONCOREPATH+"/concore_read.m") as fsource:
+        with open(outdir+"/src/concore_read.m","w") as fcopy:
+            fcopy.write(fsource.read())
+except FileNotFoundError:
     print(CONCOREPATH+" is not correct path to concore")
     quit()
-with open(outdir+"/src/concore_read.m","w") as fcopy:
-    fcopy.write(fsource.read())
-fsource.close()
 try:
-    fsource = open(CONCOREPATH+"/concore_write.m")
-except:
+    with open(CONCOREPATH+"/concore_write.m") as fsource:
+        with open(outdir+"/src/concore_write.m","w") as fcopy:
+            fcopy.write(fsource.read())
+except FileNotFoundError:
     print(CONCOREPATH+" is not correct path to concore")
     quit()
-with open(outdir+"/src/concore_write.m","w") as fcopy:
-    fcopy.write(fsource.read())
-fsource.close()
 try: #4/9/21
-    fsource = open(CONCOREPATH+"/concore_initval.m")
-except:
+    with open(CONCOREPATH+"/concore_initval.m") as fsource:
+        with open(outdir+"/src/concore_initval.m","w") as fcopy:
+            fcopy.write(fsource.read())
+except FileNotFoundError:
     print(CONCOREPATH+" is not correct path to concore")
     quit()
-with open(outdir+"/src/concore_initval.m","w") as fcopy:
-    fcopy.write(fsource.read())
-fsource.close()
 try: #11/19/21
-    fsource = open(CONCOREPATH+"/concore_iport.m")
-except:
+    with open(CONCOREPATH+"/concore_iport.m") as fsource:
+        with open(outdir+"/src/concore_iport.m","w") as fcopy:
+            fcopy.write(fsource.read())
+except FileNotFoundError:
     print(CONCOREPATH+" is not correct path to concore")
     quit()
-with open(outdir+"/src/concore_iport.m","w") as fcopy:
-    fcopy.write(fsource.read())
-fsource.close()
 try: #11/19/21
-    fsource = open(CONCOREPATH+"/concore_oport.m")
-except:
+    with open(CONCOREPATH+"/concore_oport.m") as fsource:
+        with open(outdir+"/src/concore_oport.m","w") as fcopy:
+            fcopy.write(fsource.read())
+except FileNotFoundError:
     print(CONCOREPATH+" is not correct path to concore")
     quit()
-with open(outdir+"/src/concore_oport.m","w") as fcopy:
-    fcopy.write(fsource.read())
-fsource.close()
 try: # 4/4/21
     if concoretype=="docker":
-        fsource = open(CONCOREPATH+"/import_concoredocker.m")
+        with open(CONCOREPATH+"/import_concoredocker.m") as fsource:
+            with open(outdir+"/src/import_concore.m","w") as fcopy:
+                fcopy.write(fsource.read())
     else:
-        fsource = open(CONCOREPATH+"/import_concore.m")
-except:
+        with open(CONCOREPATH+"/import_concore.m") as fsource:
+            with open(outdir+"/src/import_concore.m","w") as fcopy:
+                fcopy.write(fsource.read())
+except FileNotFoundError:
     print(CONCOREPATH+" is not correct path to concore")
     quit()
-with open(outdir+"/src/import_concore.m","w") as fcopy:
-    fcopy.write(fsource.read())
-fsource.close()
 
 
 #generate input portmap file
@@ -410,22 +405,22 @@ if (concoretype=="docker"):
                     else:
                         print("assuming .m extension for Dockerfile")
                         fsource = open(CONCOREPATH+"/Dockerfile.m")
-                except:
+                    with open(outdir+"/src/Dockerfile."+dockername,"w") as fcopy:
+                        fcopy.write(fsource.read())
+                        if langext=="py":
+                            fcopy.write('CMD ["python", "-i", "'+sourcecode+'"]\n')
+                        if langext=="m":
+                            fcopy.write('CMD ["octave", "-qf", "--eval", "run('+"'"+sourcecode+"'"+')"]\n') #3/28/21
+                        if langext=="sh":
+                            fcopy.write('CMD ["./'+sourcecode+'" ,"/opt/mcr/v910"]')  # 5/19/21
+                        #["./run_pmmat.sh", "/opt/mcr/MATLAB/MATLAB_Runtime/v910"]
+                        if langext=="v":
+                            fcopy.write('RUN iverilog ./'+sourcecode+'\n')  # 7/02/21
+                            fcopy.write('CMD ["./a.out"]\n')  # 7/02/21
+                    fsource.close()
+                except FileNotFoundError:
                     print(CONCOREPATH+" is not correct path to concore")
-                    quit()
-                with open(outdir+"/src/Dockerfile."+dockername,"w") as fcopy:
-                    fcopy.write(fsource.read())
-                    if langext=="py":
-                        fcopy.write('CMD ["python", "-i", "'+sourcecode+'"]\n')
-                    if langext=="m":
-                        fcopy.write('CMD ["octave", "-qf", "--eval", "run('+"'"+sourcecode+"'"+')"]\n') #3/28/21
-                    if langext=="sh":
-                        fcopy.write('CMD ["./'+sourcecode+'" ,"/opt/mcr/v910"]')  # 5/19/21
-                    #["./run_pmmat.sh", "/opt/mcr/MATLAB/MATLAB_Runtime/v910"]
-                    if langext=="v":
-                        fcopy.write('RUN iverilog ./'+sourcecode+'\n')  # 7/02/21
-                        fcopy.write('CMD ["./a.out"]\n')  # 7/02/21
-                fsource.close() 
+                    quit() 
 
     for node in nodes_dict:
         containername,sourcecode = nodes_dict[node].split(':')
@@ -607,9 +602,11 @@ for node in nodes_dict:
             fbuild.write("copy .\\src\\"+sourcecode+" .\\"+containername+"\\"+sourcecode+"\n")
             if langext == "py":
                 fbuild.write("copy .\\src\\concore.py .\\" + containername + "\\concore.py\n")
-            elif langext == "cpp": # 6/22/21
+            elif langext == "cpp":
+ # 6/22/21
                 fbuild.write("copy .\\src\\concore.hpp .\\" + containername + "\\concore.hpp\n")
-            elif langext == "v": # 6/25/21
+            elif langext == "v":
+ # 6/25/21
                 fbuild.write("copy .\\src\\concore.v .\\" + containername + "\\concore.v\n")
             elif langext == "m":   #  4/2/21
                 fbuild.write("copy .\\src\\concore_*.m .\\" + containername + "\\\n")
